@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "three": "^0.150.1",
+    "three-globe": "^2.25.4"
+  }
+}

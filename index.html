@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+
+    <link rel="stylesheet" href="./main.css" />
+    <script src="//unpkg.com/three"></script>
+    <script src="//unpkg.com/three-globe"></script>
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"
+    ></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.150.1/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="menu-bar">
+      <h1><span>Milton Diversity Visualizer</span></h1>
+    </div>
+    <div id="background"></div>
+
+    <script type="module">
+      import { RGBELoader } from "https://cdn.skypack.dev/three-stdlib/loaders/RGBELoader";
+      import { OrbitControls } from "https://unpkg.com/three@0.150.1/examples/jsm/controls/OrbitControls.js";
+      import {
+        DoubleSide,
+        PCFSoftShadowMap,
+        MeshPhysicalMaterial,
+        TextureLoader,
+        FloatType,
+        PMREMGenerator,
+        Scene,
+        PerspectiveCamera,
+        WebGLRenderer,
+        Color,
+        ACESFilmicToneMapping,
+        sRGBEncoding,
+        Mesh,
+        SphereGeometry,
+        MeshBasicMaterial,
+        Vector2,
+        DirectionalLight,
+        Clock,
+        RingGeometry,
+        Vector3,
+        PlaneGeometry,
+        CameraHelper,
+        Group,
+      } from "https://cdn.skypack.dev/three@0.150";
+
+      const scene = new THREE.Scene();
+
+      const camera = new THREE.PerspectiveCamera();
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      camera.position.z = 500;
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.toneMapping = ACESFilmicToneMapping;
+      renderer.outputEncoding = sRGBEncoding;
+      renderer.useLegacyLights = true;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = PCFSoftShadowMap;
+      document.getElementById("background").appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 0, 0);
+      controls.dampingFactor = 0.05;
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.enableZoom = false;
+
+      const sunLight = new THREE.DirectionalLight(
+        new THREE.Color("#FFFFFF"),
+        1
+      );
+      sunLight.position.set(60, 20, 80);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 512;
+      sunLight.shadow.mapSize.height = 512;
+      sunLight.shadow.camera.near = 0.5;
+      sunLight.shadow.camera.far = 100;
+      sunLight.shadow.camera.left = -10;
+      sunLight.shadow.camera.bottom = -10;
+      sunLight.shadow.camera.top = 10;
+      sunLight.shadow.camera.right = 10;
+
+      const sunGroup = new THREE.Group();
+      sunGroup.add(sunLight);
+      scene.add(sunGroup);
+
+      (async function () {
+        let pmrem = new PMREMGenerator(renderer);
+        let envmapTexture = await new RGBELoader()
+          .setDataType(FloatType)
+          .loadAsync("./environ_2k.hdr");
+        let envMap = pmrem.fromEquirectangular(envmapTexture).texture;
+
+        const Globe = new ThreeGlobe({
+          waitForGlobeReady: true,
+          animateIn: false,
+        })
+          .globeImageUrl(
+            "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+          )
+          .bumpImageUrl(
+            "//unpkg.com/three-globe/example/img/earth-topology.png"
+          )
+          .atmosphereColor("lightskyblue")
+          .atmosphereAltitude("0.1")
+          .showGraticules(true);
+
+        const globeMaterial = Globe.globeMaterial();
+        globeMaterial.bumpScale = 4;
+        globeMaterial.sheen = 1;
+        globeMaterial.sheenRoughness = 0.2;
+        globeMaterial.sheenColor = new THREE.Color(
+          "#63acff"
+        ).convertSRGBToLinear();
+
+        new THREE.TextureLoader().load(
+          "//unpkg.com/three-globe/example/img/earth-water.png",
+          (texture) => {
+            globeMaterial.specularMap = texture;
+          }
+        );
+
+        fetch("./coordinates.json")
+          .then((response) => response.json())
+          .then((coordinates) => {
+            let new_coords = [];
+            let arcs = [];
+
+            coordinates.forEach((coordinate) => {
+              new_coords.push({
+                lat: coordinate[0],
+                lng: coordinate[1],
+                value: 1,
+              });
+              arcs.push({
+                startLat: 42.2566,
+                startLng: -71.07,
+                endLat: coordinate[0],
+                endLng: coordinate[1],
+              });
+            });
+
+  
+            // Globe.arcsData(arcs);
+
+            Globe.arcColor((arc) => {
+              return ["#619dff", "#abe4ff"];
+            });
+
+            Globe.pointColor((point) => {
+              return "rgba(20,120,245,1)";
+            });
+
+            Globe.pointAltitude(0.01);
+            Globe.pointRadius(1);
+            Globe.pointsMerge(true);
+            Globe.pointsData(new_coords);
+
+            console.log(Globe.getGlobeRadius());
+          });
+
+        const globeGroup = new THREE.Group();
+        globeGroup.add(Globe);
+        scene.add(Globe);
+
+        renderer.setAnimationLoop(() => {
+          controls.update();
+          sunGroup.quaternion.copy(camera.quaternion);
+          renderer.render(scene, camera);
+        });
+      })();
+    </script>
+  </body>
+</html>
