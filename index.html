@@ -23,39 +23,30 @@
   </head>
 
   <body>
-    <div class="container">
-
-      
-      <div class="menu-bar" id="menu-bar">
-        <!-- <h1><span>Milton Academy: Globe Visualization</span></h1> -->
-        <select name="dorm-select" id="dorm-select">
-          <option value="">Select a Dorm</option>
-          <option value="Wolcott House">Wolcott House</option>
-          <option value="Forbes House">Forbes House</option>
-          <option value="Goodwin House">Goodwin House</option>
-          <option value="Norris House">Norris House</option>
-          <option value="Millet House">Millet House</option>
-          <option value="Robbins House">Robbins House</option>
-          <option value="Hathaway House">Hathaway House</option>
-          <option value="Academy House">Academy House</option>
-          <option value="Hallowell House">Hallowell House</option>
-          <option value="Day Student">Day Student</option>
-        </select>
-        
-        <!-- <form id="lines-form">
-          <input type="checkbox" name="lines" id="lines">
-          <label for="lines">Lines</label>
-        </form>
-  
-        <form id="rotation-form">
-          <input type="checkbox" name="rotation" id="rotation">
-          <label for="rotation">Rotation</label>
-        </form> -->
-        
+    <div class="menu-bar" id="menu-bar">
+      <div class="title-with-button">
+        <h1><span>The Milton Academy Globe</span></h1>
+        <p>By <a target="_blank" href="https://bryansukidi.com">Bryan Sukidi</a> '24</p>
       </div>
-  
-      <div id="background"></div>
     </div>
+
+    <div class="dorm-button-container">
+      <select name="dorm-select" id="dorm-select">
+        <option value="">Dorm</option>
+        <option value="Wolcott House">Wolcott House</option>
+        <option value="Forbes House">Forbes House</option>
+        <option value="Goodwin House">Goodwin House</option>
+        <option value="Norris House">Norris House</option>
+        <option value="Millet House">Millet House</option>
+        <option value="Robbins House">Robbins House</option>
+        <option value="Hathaway House">Hathaway House</option>
+        <option value="Academy House">Academy House</option>
+        <option value="Hallowell House">Hallowell House</option>
+        <option value="Day Student">Day Student</option>
+      </select>
+    </div>
+
+    <div id="background"></div>
 
     <script type="module">
       import { RGBELoader } from "https://cdn.skypack.dev/three-stdlib/loaders/RGBELoader";
@@ -92,10 +83,10 @@
       const scene = new THREE.Scene();
 
       const camera = new THREE.PerspectiveCamera();
-      camera.aspect = window.innerWidth / (window.innerHeight - menuBar.offsetHeight);
+      camera.aspect =
+        window.innerWidth / (window.innerHeight - menuBar.offsetHeight);
       camera.position.z = 400;
       camera.updateProjectionMatrix();
-
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -108,7 +99,6 @@
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = PCFSoftShadowMap;
       background.appendChild(renderer.domElement);
-
 
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.autoRotate = false;
@@ -178,12 +168,14 @@
 
         const dormSelect = document.getElementById("dorm-select");
 
+        window.onresize = function () {
+          location.reload();
+        };
 
         dormSelect.onchange = function () {
           const selectedDorm =
             dormSelect.options[dormSelect.selectedIndex].value;
           console.log(selectedDorm);
-
 
           fetch("./dorm_addresses.json")
             .then((response) => response.json())
@@ -191,7 +183,7 @@
               let new_coords = [];
               let arcs = [];
 
-              if (selectedDorm == ""){
+              if (selectedDorm == "") {
                 Globe.arcsData([]);
                 Globe.pointsData([]);
                 return;
@@ -206,7 +198,7 @@
                   startLat: coordinate[0],
                   startLng: coordinate[1],
                   endLat: 42.2566,
-                  endLng: -71.07
+                  endLng: -71.07,
                 });
               });
 
@@ -221,8 +213,8 @@
               });
 
               Globe.arcDashLength(0.05);
-              Globe.arcDashGap(0.05);
-              Globe.arcDashAnimateTime(12000)
+              Globe.arcDashGap(0.01);
+              Globe.arcDashAnimateTime(12000);
 
               Globe.pointAltitude(0.01);
               Globe.pointRadius(1);
@@ -241,9 +233,18 @@
           controls.update();
           sunGroup.quaternion.copy(camera.quaternion);
           renderer.render(scene, camera);
-
         });
       })();
     </script>
   </body>
 </html>
+
+<!-- <form id="lines-form">
+          <input type="checkbox" name="lines" id="lines">
+          <label for="lines">Lines</label>
+        </form>
+  
+        <form id="rotation-form">
+          <input type="checkbox" name="rotation" id="rotation">
+          <label for="rotation">Rotation</label>
+        </form> -->
