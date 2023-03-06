@@ -23,10 +23,39 @@
   </head>
 
   <body>
-    <div class="menu-bar">
-      <h1><span>Milton Diversity Visualizer</span></h1>
+    <div class="container">
+
+      
+      <div class="menu-bar" id="menu-bar">
+        <!-- <h1><span>Milton Academy: Globe Visualization</span></h1> -->
+        <select name="dorm-select" id="dorm-select">
+          <option value="">Select a Dorm</option>
+          <option value="Wolcott House">Wolcott House</option>
+          <option value="Forbes House">Forbes House</option>
+          <option value="Goodwin House">Goodwin House</option>
+          <option value="Norris House">Norris House</option>
+          <option value="Millet House">Millet House</option>
+          <option value="Robbins House">Robbins House</option>
+          <option value="Hathaway House">Hathaway House</option>
+          <option value="Academy House">Academy House</option>
+          <option value="Hallowell House">Hallowell House</option>
+          <option value="Day Student">Day Student</option>
+        </select>
+        
+        <!-- <form id="lines-form">
+          <input type="checkbox" name="lines" id="lines">
+          <label for="lines">Lines</label>
+        </form>
+  
+        <form id="rotation-form">
+          <input type="checkbox" name="rotation" id="rotation">
+          <label for="rotation">Rotation</label>
+        </form> -->
+        
+      </div>
+  
+      <div id="background"></div>
     </div>
-    <div id="background"></div>
 
     <script type="module">
       import { RGBELoader } from "https://cdn.skypack.dev/three-stdlib/loaders/RGBELoader";
@@ -57,31 +86,40 @@
         Group,
       } from "https://cdn.skypack.dev/three@0.150";
 
+      const background = document.getElementById("background");
+      const menuBar = document.getElementById("menu-bar");
+
       const scene = new THREE.Scene();
 
       const camera = new THREE.PerspectiveCamera();
-      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.aspect = window.innerWidth / (window.innerHeight - menuBar.offsetHeight);
+      camera.position.z = 400;
       camera.updateProjectionMatrix();
-      camera.position.z = 500;
+
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
       });
-      renderer.setSize(innerWidth, innerHeight);
+      renderer.setSize(innerWidth, innerHeight - menuBar.offsetHeight);
       renderer.toneMapping = ACESFilmicToneMapping;
       renderer.outputEncoding = sRGBEncoding;
       renderer.useLegacyLights = true;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = PCFSoftShadowMap;
-      document.getElementById("background").appendChild(renderer.domElement);
+      background.appendChild(renderer.domElement);
+
 
       const controls = new OrbitControls(camera, renderer.domElement);
+      controls.autoRotate = false;
+      controls.autoRotateSpeed = 1.0;
       controls.target.set(0, 0, 0);
       controls.dampingFactor = 0.05;
       controls.enableDamping = true;
       controls.enablePan = false;
-      controls.enableZoom = false;
+      controls.enableZoom = true;
+      controls.minDistance = 150;
+      controls.maxDistance = 400;
 
       const sunLight = new THREE.DirectionalLight(
         new THREE.Color("#FFFFFF"),
@@ -124,7 +162,7 @@
           .showGraticules(true);
 
         const globeMaterial = Globe.globeMaterial();
-        globeMaterial.bumpScale = 4;
+        globeMaterial.bumpScale = 10;
         globeMaterial.sheen = 1;
         globeMaterial.sheenRoughness = 0.2;
         globeMaterial.sheenColor = new THREE.Color(
@@ -138,44 +176,62 @@
           }
         );
 
-        fetch("./coordinates.json")
-          .then((response) => response.json())
-          .then((coordinates) => {
-            let new_coords = [];
-            let arcs = [];
+        const dormSelect = document.getElementById("dorm-select");
 
-            coordinates.forEach((coordinate) => {
-              new_coords.push({
-                lat: coordinate[0],
-                lng: coordinate[1],
-                value: 1,
+
+        dormSelect.onchange = function () {
+          const selectedDorm =
+            dormSelect.options[dormSelect.selectedIndex].value;
+          console.log(selectedDorm);
+
+
+          fetch("./dorm_addresses.json")
+            .then((response) => response.json())
+            .then((coordinates) => {
+              let new_coords = [];
+              let arcs = [];
+
+              if (selectedDorm == ""){
+                Globe.arcsData([]);
+                Globe.pointsData([]);
+                return;
+              }
+              coordinates[selectedDorm].forEach((coordinate) => {
+                new_coords.push({
+                  lat: coordinate[0],
+                  lng: coordinate[1],
+                  value: 1,
+                });
+                arcs.push({
+                  startLat: coordinate[0],
+                  startLng: coordinate[1],
+                  endLat: 42.2566,
+                  endLng: -71.07
+                });
               });
-              arcs.push({
-                startLat: 42.2566,
-                startLng: -71.07,
-                endLat: coordinate[0],
-                endLng: coordinate[1],
+
+              Globe.arcsData(arcs);
+
+              Globe.arcColor((arc) => {
+                return ["#619dff", "#abe4ff"];
               });
+
+              Globe.pointColor((point) => {
+                return "rgba(20,120,245,1)";
+              });
+
+              Globe.arcDashLength(0.05);
+              Globe.arcDashGap(0.05);
+              Globe.arcDashAnimateTime(12000)
+
+              Globe.pointAltitude(0.01);
+              Globe.pointRadius(1);
+              Globe.pointsMerge(true);
+              Globe.pointsData(new_coords);
+
+              console.log(Globe.getGlobeRadius());
             });
-
-  
-            // Globe.arcsData(arcs);
-
-            Globe.arcColor((arc) => {
-              return ["#619dff", "#abe4ff"];
-            });
-
-            Globe.pointColor((point) => {
-              return "rgba(20,120,245,1)";
-            });
-
-            Globe.pointAltitude(0.01);
-            Globe.pointRadius(1);
-            Globe.pointsMerge(true);
-            Globe.pointsData(new_coords);
-
-            console.log(Globe.getGlobeRadius());
-          });
+        };
 
         const globeGroup = new THREE.Group();
         globeGroup.add(Globe);
@@ -185,6 +241,7 @@
           controls.update();
           sunGroup.quaternion.copy(camera.quaternion);
           renderer.render(scene, camera);
+
         });
       })();
     </script>
