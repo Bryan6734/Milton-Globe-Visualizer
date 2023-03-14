@@ -94,14 +94,17 @@ span {
   justify-content: center;
   align-items: center;
   background-image: url(dark-sky.jpeg);
-  z-index: -2;
+  z-index: -1;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-user-drag: none;
 
-  
-  
+}
+
+.loading {
+  position: absolute;
+  z-index: 1;
 }
 
 

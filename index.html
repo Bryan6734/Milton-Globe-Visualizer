@@ -47,7 +47,9 @@
       </select>
     </div>
 
-    <div id="background"></div>
+    <div id="background">
+      <p class="loading" id="loading">Loading...</p>
+    </div>
 
     <script type="module">
       import { RGBELoader } from "https://cdn.skypack.dev/three-stdlib/loaders/RGBELoader";
@@ -150,7 +152,11 @@
           )
           .atmosphereColor("lightskyblue")
           .atmosphereAltitude("0.1")
-          .showGraticules(true);
+          .showGraticules(true)
+          .onGlobeReady(() => {
+            const loadingText = document.getElementById("loading")
+            loadingText.style.zIndex = -2;
+          });
 
         const globeMaterial = Globe.globeMaterial();
         globeMaterial.bumpScale = 10;
